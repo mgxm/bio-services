@@ -1,0 +1,7 @@
+[package]
+name = "bio-services"
+version = "0.1.0"
+authors = ["Marcio Giaxa <i@mgxm.me>"]
+
+[dependencies]
+reqwest = "0.8"
