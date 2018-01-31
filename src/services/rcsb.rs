@@ -1,7 +1,4 @@
-use super::*;
-use std::io::prelude::*;
-use std::io::Read;
-use std::fs::File;
+use services::Downloader;
 
 pub struct Mmtf<'a> {
     version: &'a str,
@@ -9,10 +6,17 @@ pub struct Mmtf<'a> {
     representation: &'a str,
 }
 
-impl<'a> Mmtf<'a> {
-    pub fn new() -> Self {
-        Mmtf { ..Default::default() }
+impl<'a> Default for Mmtf<'a> {
+    fn default() -> Self {
+        let version = "1.0";
+        let uri     = "https://mmtf.rcsb.org";
+        let representation = "full";
+
+        Mmtf { version, uri, representation }
     }
+}
+
+impl<'a> Mmtf<'a> {
 
     pub fn with_version(&mut self, version: &'a str) -> &mut Self {
         self.version = version;
@@ -29,7 +33,6 @@ impl<'a> Mmtf<'a> {
         self
     }
 
-
     pub fn build(&self) -> Mmtf<'a> {
         Mmtf {
             version: self.version,
@@ -41,42 +44,22 @@ impl<'a> Mmtf<'a> {
     pub fn url(&self) -> String {
         format!("{}/v{}/{}/", self.uri, self.version, self.representation)
     }
-
-    pub fn download(&self, id: &str, path: &str) {
-        let uri = format!("{}{}.mmtf.gz", self.url(), id);
-
-        let client = reqwest::Client::builder()
-            .gzip(false)
-            .build().expect("buid failed");
-
-        let mut resp = client.get(&uri).send().unwrap();
-        assert!(&resp.status().is_success());
-
-        let mut buf: Vec<u8> = vec![];
-        resp.copy_to(&mut buf).unwrap();
-
-        let path = format!("{}/{}.mmtf", path, id);
-        let mut file = File::create(&path).unwrap();
-        file.write_all(&buf);
-    }
 }
 
 impl<'a> Downloader for Mmtf<'a> {
-    fn download(id: &str, path: &str) {
-        let mmtf = Mmtf::new();
-        mmtf.download(id, path);
+    fn new() -> Self {
+        Mmtf { ..Default::default() }
+    }
+
+    fn download(&self, id: &str, path: &str) {
+        let file = format!("{}.mmtf.gz", id);
+        let uri = format!("{}{}", self.url(), file);
+        let path = format!("{}/{}", path, file);
+
+        Self::request_download(&uri, &path);
     }
 }
 
-impl<'a> Default for Mmtf<'a> {
-    fn default() -> Self {
-        let version = "1.0";
-        let uri     = "https://mmtf.rcsb.org";
-        let representation = "full";
-
-        Mmtf { version, uri, representation }
-    }
-}
 
 #[cfg(test)]
 mod tests {
