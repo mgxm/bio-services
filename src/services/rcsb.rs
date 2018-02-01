@@ -1,4 +1,4 @@
-pub use ::services::Downloader;
+pub use services::Downloader;
 
 pub struct Mmtf<'a> {
     version: &'a str,
@@ -9,15 +9,18 @@ pub struct Mmtf<'a> {
 impl<'a> Default for Mmtf<'a> {
     fn default() -> Self {
         let version = "1.0";
-        let uri     = "https://mmtf.rcsb.org";
+        let uri = "https://mmtf.rcsb.org";
         let representation = "full";
 
-        Mmtf { version, uri, representation }
+        Mmtf {
+            version,
+            uri,
+            representation,
+        }
     }
 }
 
 impl<'a> Mmtf<'a> {
-
     pub fn with_version(&mut self, version: &'a str) -> &mut Self {
         self.version = version;
         self
@@ -47,8 +50,10 @@ impl<'a> Mmtf<'a> {
 }
 
 impl<'a> Downloader for Mmtf<'a> {
-    fn new() -> Self {
-        Mmtf { ..Default::default() }
+    fn new() -> Mmtf<'a> {
+        Mmtf {
+            ..Default::default()
+        }
     }
 
     fn download(&self, id: &str, path: &str) {
@@ -59,7 +64,6 @@ impl<'a> Downloader for Mmtf<'a> {
         Self::request_download(&uri, &path);
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -73,25 +77,19 @@ mod tests {
 
     #[test]
     fn mmtf_custom_version() {
-        let custom = Mmtf::new()
-            .with_version("2.0")
-            .build();
+        let custom = Mmtf::new().with_version("2.0").build();
         assert_eq!(custom.url(), "https://mmtf.rcsb.org/v2.0/full/");
     }
 
     #[test]
     fn mmtf_custom_represetation() {
-        let custom = Mmtf::new()
-            .with_representation("reduced")
-            .build();
+        let custom = Mmtf::new().with_representation("reduced").build();
         assert_eq!(custom.url(), "https://mmtf.rcsb.org/v1.0/reduced/");
     }
 
     #[test]
     fn mmtf_custom_uri() {
-        let custom = Mmtf::new()
-            .with_uri("localhost")
-            .build();
+        let custom = Mmtf::new().with_uri("localhost").build();
         assert_eq!(custom.url(), "localhost/v1.0/full/");
     }
 }

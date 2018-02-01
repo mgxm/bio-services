@@ -14,7 +14,8 @@ pub trait Downloader {
     fn request_download(uri: &str, path: &str) {
         let client = reqwest::Client::builder()
             .gzip(false)
-            .build().expect("buid failed");
+            .build()
+            .expect("buid failed");
 
         let mut resp = client.get(uri).send().unwrap();
         assert!(&resp.status().is_success());
@@ -26,3 +27,4 @@ pub trait Downloader {
         file.write_all(&buf);
     }
 }
+
