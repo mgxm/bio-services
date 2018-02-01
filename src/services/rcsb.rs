@@ -1,4 +1,4 @@
-use services::Downloader;
+pub use ::services::Downloader;
 
 pub struct Mmtf<'a> {
     version: &'a str,
