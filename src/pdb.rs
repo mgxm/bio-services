@@ -15,7 +15,7 @@ impl<'a> Default for PdbDownloader<'a> {
 }
 
 impl<'a> PdbDownloader<'a> {
-    fn new() -> PdbDownloader<'a> {
+    pub fn new() -> PdbDownloader<'a> {
         PdbDownloader {
             ..Default::default()
         }

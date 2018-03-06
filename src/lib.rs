@@ -5,7 +5,7 @@ use std::io::prelude::*;
 use std::io::Read;
 use std::fs::File;
 use std::path::Path;
-use std::io::{Error, Seek, SeekFrom};
+use std::io::{Error, ErrorKind, Seek, SeekFrom};
 
 pub mod pdb;
 pub mod mmtf;
@@ -50,14 +50,19 @@ pub trait Downloader: UrlFormatter + ExtFormatter {
         id: S,
         path: P,
     ) -> Result<File, Error> {
-        let id = id.into();
+        if path.as_ref().is_dir() {
+            let id = id.into();
 
-        let id_with_extension = self.format_ext(id.clone());
-        let path = path.as_ref().join(id_with_extension);
+            let id_with_extension = self.format_ext(id.clone());
+            let path = path.as_ref().join(id_with_extension);
 
-        let mut file = try!(self.fetch(id));
-        file.seek(SeekFrom::Start(0)).unwrap();
-        file.save_on(path)
+            let mut file = try!(self.fetch(id));
+            file.seek(SeekFrom::Start(0)).unwrap();
+            return file.save_on(path);
+        } else {
+            let error = format!("Invalid path: `{}`", &path.as_ref().to_str().unwrap());
+            Err(Error::new(ErrorKind::Other, error))
+        }
     }
 
     fn request_file(uri: &str) -> Result<File, Error> {

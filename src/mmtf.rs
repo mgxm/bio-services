@@ -21,7 +21,7 @@ impl<'a> Default for MmtfDownloader<'a> {
 }
 
 impl<'a> MmtfDownloader<'a> {
-    fn new() -> MmtfDownloader<'a> {
+    pub fn new() -> MmtfDownloader<'a> {
         MmtfDownloader {
             ..Default::default()
         }
