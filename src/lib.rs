@@ -5,10 +5,33 @@ use std::io::prelude::*;
 use std::io::Read;
 use std::fs::File;
 use std::path::Path;
+use std::fmt;
+use std::convert::From;
 use std::io::{Error, ErrorKind, Seek, SeekFrom};
 
 pub mod pdb;
 pub mod mmtf;
+
+#[derive(Debug)]
+pub enum DownloaderError {
+    Request(reqwest::StatusCode),
+    Io(Error),
+}
+
+impl fmt::Display for DownloaderError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            DownloaderError::Request(ref err) => write!(f, "{}", err),
+            DownloaderError::Io(ref err) => write!(f, "{}", err),
+        }
+    }
+}
+
+impl From<Error> for DownloaderError {
+    fn from(error: Error) -> Self {
+        DownloaderError::Io(error)
+    }
+}
 
 pub trait ExtFormatter {
     fn format_ext<S: Into<String>>(&self, id: S) -> String;
@@ -19,11 +42,11 @@ pub trait UrlFormatter {
 }
 
 pub trait SaveExt {
-    fn save_on<P: AsRef<Path>>(&mut self, path: P) -> Result<File, Error>;
+    fn save_on<P: AsRef<Path>>(&mut self, path: P) -> Result<File, DownloaderError>;
 }
 
 impl SaveExt for File {
-    fn save_on<P: AsRef<Path>>(&mut self, path: P) -> Result<File, Error> {
+    fn save_on<P: AsRef<Path>>(&mut self, path: P) -> Result<File, DownloaderError> {
         // Create a new File.
         let mut file = try!(File::create(path));
 
@@ -40,7 +63,7 @@ impl SaveExt for File {
 pub trait Downloader: UrlFormatter + ExtFormatter {
     fn prepare_url<S: Into<String>>(&self, id: S) -> String;
 
-    fn fetch<S: Into<String>>(&self, id: S) -> Result<File, Error> {
+    fn fetch<S: Into<String>>(&self, id: S) -> Result<File, DownloaderError> {
         let uri = self.prepare_url(id);
         Ok(try!(Self::request_file(&uri)))
     }
@@ -49,7 +72,7 @@ pub trait Downloader: UrlFormatter + ExtFormatter {
         &self,
         id: S,
         path: P,
-    ) -> Result<File, Error> {
+    ) -> Result<File, DownloaderError> {
         if path.as_ref().is_dir() {
             let id = id.into();
 
@@ -60,19 +83,23 @@ pub trait Downloader: UrlFormatter + ExtFormatter {
             file.seek(SeekFrom::Start(0)).unwrap();
             return file.save_on(path);
         } else {
-            let error = format!("Invalid path: `{}`", &path.as_ref().to_str().unwrap());
-            Err(Error::new(ErrorKind::Other, error))
+            let error = format!("Invalid path: `{:?}`", &path.as_ref());
+            Err(DownloaderError::Io(Error::new(ErrorKind::Other, error)))
         }
     }
 
-    fn request_file(uri: &str) -> Result<File, Error> {
+    fn request_file(uri: &str) -> Result<File, DownloaderError> {
         let client = reqwest::Client::builder()
             .gzip(false)
             .build()
             .expect("buid failed");
 
         let mut resp = client.get(uri).send().unwrap();
-        assert!(&resp.status().is_success());
+
+        match &resp.status() {
+            &reqwest::StatusCode::Ok => (),
+            _ => return Err(DownloaderError::Request(resp.status())),
+        }
 
         let mut buf: Vec<u8> = vec![];
         resp.copy_to(&mut buf).unwrap();
@@ -81,5 +108,22 @@ pub trait Downloader: UrlFormatter + ExtFormatter {
         try!(tmpfile.write_all(&buf));
         tmpfile.seek(SeekFrom::Start(0)).unwrap();
         Ok(tmpfile)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn it_handle_request_file_error() {
+        let mmtf = mmtf::MmtfDownloader::new();
+        let res = mmtf.fetch("nothing");
+
+        if let DownloaderError::Request(err) = res.unwrap_err() {
+            assert_eq!(err, reqwest::StatusCode::NotFound);
+        } else {
+            panic!();
+        }
     }
 }

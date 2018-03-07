@@ -66,6 +66,7 @@ mod tests {
     use super::*;
     use std::path::Path;
     use std::fs::File;
+    use std::env;
 
     #[test]
     fn pdb_default_url() {
@@ -85,8 +86,7 @@ mod tests {
 
     #[test]
     fn pdb_fech_and_save() {
-        let path = Path::new(file!()).parent().unwrap().parent().unwrap();
-
+        let path = env::current_dir().unwrap();
         let full_path = Path::new(&path).join("1hh3.pdb1.gz");
         let mmtf = PdbDownloader::new();
         mmtf.fetch_and_save_on("1hh3", path).unwrap();
