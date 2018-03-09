@@ -5,3 +5,4 @@ authors = ["Marcio Giaxa <i@mgxm.me>"]
 
 [dependencies]
 reqwest = "0.8"
+tempfile = "2"
