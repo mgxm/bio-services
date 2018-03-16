@@ -1,4 +1,5 @@
-pub use super::{Downloader, ExtFormatter, SaveExt, UrlFormatter};
+pub use super::{Downloader, DownloaderError, ExtFormatter, SaveExt, UrlFormatter};
+use std::fs::File;
 
 pub struct MmtfDownloader<'a> {
     version: &'a str,
@@ -66,6 +67,10 @@ impl<'a> UrlFormatter for MmtfDownloader<'a> {
 impl<'a> Downloader for MmtfDownloader<'a> {
     fn prepare_url<S: Into<String>>(&self, id: S) -> String {
         format!("{}{}", self.format_url(), self.format_ext(id))
+    }
+
+    fn download<S: Into<String>>(id: S) -> Result<File, DownloaderError> {
+        Ok(MmtfDownloader::new().fetch(id)?)
     }
 }
 

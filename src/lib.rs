@@ -12,6 +12,9 @@ use std::io::{Error, ErrorKind, Seek, SeekFrom};
 pub mod pdb;
 pub mod mmtf;
 
+pub use pdb::PdbDownloader;
+pub use mmtf::MmtfDownloader;
+
 #[derive(Debug)]
 pub enum DownloaderError {
     Request(reqwest::StatusCode),
@@ -62,6 +65,8 @@ impl SaveExt for File {
 
 pub trait Downloader: UrlFormatter + ExtFormatter {
     fn prepare_url<S: Into<String>>(&self, id: S) -> String;
+
+    fn download<S: Into<String>>(id: S) -> Result<File, DownloaderError>;
 
     fn fetch<S: Into<String>>(&self, id: S) -> Result<File, DownloaderError> {
         let uri = self.prepare_url(id);

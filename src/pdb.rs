@@ -1,4 +1,5 @@
-pub use super::{Downloader, ExtFormatter, SaveExt, UrlFormatter};
+pub use super::{Downloader, ExtFormatter, SaveExt, UrlFormatter, DownloaderError};
+use std::fs::File;
 
 pub struct PdbDownloader<'a> {
     uri: &'a str,
@@ -58,6 +59,10 @@ impl<'a> UrlFormatter for PdbDownloader<'a> {
 impl<'a> Downloader for PdbDownloader<'a> {
     fn prepare_url<S: Into<String>>(&self, id: S) -> String {
         format!("{}{}", self.format_url(), self.format_ext(id))
+    }
+
+    fn download<S: Into<String>>(id: S) -> Result<File, DownloaderError> {
+        Ok(PdbDownloader::new().fetch(id)?)
     }
 }
 
